@@ -1,0 +1,61 @@
+{
+  "name": "nestjs-rabbitmq-consumers",
+  "version": "1.0.0",
+  "description": "NestJS module for RabbitMQ consumers",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "tsc -p tsconfig.json",
+    "test:e2e": "jest --config tests/e2e/jest.e2e.json --runInBand"
+  },
+  "keywords": [
+    "amqp",
+    "rabbitmq",
+    "typescript",
+    "nodejs",
+    "nestjs",
+    "worker",
+    "consmumer"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexrepin/nestjs-rabbitmq-consumers"
+  },
+  "author": "Alexander Repin <a.repin@cit.ooo>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alexrepin/nestjs-rabbitmq-consumers/issues"
+  },
+  "homepage": "https://github.com/alexrepin/nestjs-rabbitmq-consumers",
+  "dependencies": {
+    "@nestjs/platform-express": "^8.4.4",
+    "@types/amqplib": "^0.8.2",
+    "@types/rascal": "^10.0.4",
+    "amqplib": "^0.8.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.13.2",
+    "rascal": "^14.4.1",
+    "reflect-metadata": "^0.1.13"
+  },
+  "devDependencies": {
+    "@nestjs/common": "^8.4.4",
+    "@nestjs/core": "^8.4.4",
+    "@nestjs/testing": "^8.4.4",
+    "@types/amqp-connection-manager": "^2.0.12",
+    "@types/jest": "^27.4.1",
+    "@types/node": "^16.11.7",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "eslint": "^8.2.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "jest": "^27.5.1",
+    "prettier": "^2.4.1",
+    "rxjs": "^7.5.5",
+    "ts-jest": "^27.1.4",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.6.3"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^8.4.4"
+  }
+}
