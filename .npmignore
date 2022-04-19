@@ -1,0 +1,6 @@
+/tsconfig.build.json
+/package-lock.json
+/.eslintrc
+/.prettierrc
+/node_modules
+/src
