@@ -1,73 +1,50 @@
 import { Injectable } from '@nestjs/common';
-import { RMQConnection } from '../interface/rmq.connection';
-import { BrokerAsPromised, withDefaultConfig } from 'rascal';
+import * as amqp from 'amqplib';
+import { ConnectionOptions } from '../interface/connection.options';
+import { Options } from 'amqplib';
+import { ConnectionUriFactory } from '../factory/ConnectionUriFactory';
+import { ConsumerService } from './consumer.service';
+import Publish = Options.Publish;
+import { ConnectionService } from './connection.service';
+import { RMQModule } from '../rmq.module';
 
 @Injectable()
 export class RMQService {
-  private readonly connections = new Map<string, BrokerAsPromised>();
+  private readonly timeout = 10 * 1000;
 
-  public async connect(options: RMQConnection): Promise<void> {
-    const queues = {};
-    const subscriptions = {};
-    const publications = {};
-    const uri = `amqp://${options.login}:${options.password}@${options.host}:${
-      options.port ?? 5672
-    }/${options.vhost ?? ''}`;
+  constructor(
+    private readonly consumerService: ConsumerService,
+    private readonly connectionService: ConnectionService,
+  ) {}
 
-    options.queues.map((queue) => {
-      queues[queue.name] = {
-        assert: true,
-        options: queue.queueOptions,
-        fullyQualifiedName: queue.name,
-      };
-
-      subscriptions[queue.name] = {
-        queue: queue.name,
-        prefetch: options.prefetch,
-      };
+  public async connect(options: ConnectionOptions): Promise<void> {
+    const connection = await amqp.connect(ConnectionUriFactory.create(options));
+    connection.on('close', () => {
+      if (!RMQModule.isShutdown) {
+        setTimeout(() => this.connect(options), this.timeout);
+      }
     });
 
-    if (options.publishers) {
-      options.publishers.map((publisher) => {
-        queues[publisher] = {
-          assert: false,
-          fullyQualifiedName: publisher,
-        };
+    this.connectionService.setConnection(options.name, connection);
+    this.consumerService.register(options.name);
+  }
 
-        publications[publisher] = {
-          queue: publisher,
-          vhost: options.vhost,
-        };
-      });
-    }
-
-    const connect = await BrokerAsPromised.create(
-      withDefaultConfig({
-        vhosts: {
-          [`/${options.vhost}`]: {
-            connection: {
-              url: uri,
-            },
-            queues: queues,
-            subscriptions: subscriptions,
-            publications: publications,
-          },
-        },
-      }),
+  public async sendToQueue(
+    connection: string,
+    queue: string,
+    payload: object,
+    options?: Publish,
+  ): Promise<boolean> {
+    const connect = this.connectionService.getConnection(connection);
+    const channel = await connect.createChannel();
+    const result = channel.sendToQueue(
+      queue,
+      Buffer.from(JSON.stringify(payload)),
+      options,
     );
 
-    this.connections.set(options.name, connect);
-  }
+    await channel.close();
 
-  public getConnection(name: string): BrokerAsPromised {
-    if (!this.connections.has(name)) {
-      throw new Error(`Channel ${name} not found!`);
-    }
-
-    return this.connections.get(name);
-  }
-
-  public getConnections(): IterableIterator<BrokerAsPromised> {
-    return this.connections.values();
+    return result;
   }
 }

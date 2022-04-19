@@ -3,6 +3,7 @@ import { RMQModule } from '../../../src/rmq.module';
 import { RMQService } from '../../../src/service/rmq.service';
 import { TestController } from '../src/controller/test.controller';
 import { TestDto } from '../src/dto/test.dto';
+import { INestApplication } from '@nestjs/common';
 
 /**
  * Test case:
@@ -16,9 +17,10 @@ import { TestDto } from '../src/dto/test.dto';
  */
 describe('e2e', () => {
   let rmqService: RMQService = null;
+  let module: INestApplication = null;
 
   beforeAll(async () => {
-    const module = await Test.createTestingModule({
+    const test = await Test.createTestingModule({
       imports: [
         RMQModule.forRoot([
           {
@@ -26,67 +28,35 @@ describe('e2e', () => {
             login: 'guest',
             password: 'guest',
             host: '127.0.0.1',
-            queues: [
-              {
-                name: 'queue',
-                queueOptions: {
-                  durable: true,
-                  maxPriority: 255,
-                },
-              },
-            ],
-            publishers: ['publisher', 'queue'],
           },
         ]),
       ],
       controllers: [TestController],
     }).compile();
 
-    module.createNestApplication();
+    module = test.createNestApplication();
     await module.init();
 
     rmqService = module.get<RMQService>(RMQService);
   });
 
-  describe('send test message to queue', () => {
-    it('test', async () => {
-      const connection = rmqService.getConnection('test');
-      const result = await connection.publish(
-        'publisher',
-        {
-          test: 1,
-        },
-        {
-          options: {
-            replyTo: 'replyTo',
-            correlationId: 'correlationId',
-            priority: 250,
-          },
-        },
-      );
-
-      expect(!result.isAborted()).toBe(true);
-    });
-  });
-
-  describe('consume test message from queue', () => {
+  describe('test consuming', () => {
     it('send test message', async () => {
-      const connection = rmqService.getConnection('test');
-      const result = await connection.publish(
+      const result = await rmqService.sendToQueue(
+        'test',
         'queue',
+
         {
           date: '1996-01-28',
         },
         {
-          options: {
-            replyTo: 'replyTo',
-            correlationId: 'correlationId',
-            priority: 250,
-          },
+          replyTo: 'replyTo',
+          correlationId: 'correlationId',
+          priority: 250,
         },
       );
 
-      expect(!result.isAborted()).toBe(true);
+      expect(result).toBe(true);
     });
 
     it('consume test message', async () => {
@@ -97,8 +67,8 @@ describe('e2e', () => {
       });
 
       const dto: TestDto = TestController.test;
+      // await module.close();
 
-      console.log(dto);
       expect(dto.date).toBeInstanceOf(Date);
     });
   });

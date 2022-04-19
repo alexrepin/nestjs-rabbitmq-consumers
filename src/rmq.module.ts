@@ -5,30 +5,27 @@ import {
   OnApplicationShutdown,
   OnModuleInit,
 } from '@nestjs/common';
-import {
-  DiscoveryModule,
-  DiscoveryService,
-  MetadataScanner,
-} from '@nestjs/core';
-import { RMQConnection } from './interface/rmq.connection';
-import { ConsumerService } from './service/consumer.service';
+import { DiscoveryModule } from '@nestjs/core';
 import { RMQService } from './service/rmq.service';
+import { ConnectionOptions } from './interface/connection.options';
+import { ConsumerService } from './service/consumer.service';
+import { ConnectionService } from './service/connection.service';
 
 @Module({
   imports: [DiscoveryModule],
-  providers: [RMQService, ConsumerService],
+  providers: [RMQService, ConsumerService, ConnectionService],
   exports: [RMQService],
 })
 export class RMQModule implements OnModuleInit, OnApplicationShutdown {
+  public static isShutdown = false;
+
   constructor(
     private readonly rmqService: RMQService,
-    private readonly discoveryService: DiscoveryService,
-    private readonly consumerService: ConsumerService,
-    private readonly metadataScanner: MetadataScanner,
-    @Inject(RMQModule.name) private readonly connections: RMQConnection[],
+    private readonly connectionService: ConnectionService,
+    @Inject(RMQModule.name) private readonly options: ConnectionOptions[],
   ) {}
 
-  static forRoot(options: RMQConnection[]): DynamicModule {
+  static forRoot(options: ConnectionOptions[]): DynamicModule {
     return {
       module: RMQModule,
       providers: [RMQService, { provide: RMQModule.name, useValue: options }],
@@ -37,26 +34,16 @@ export class RMQModule implements OnModuleInit, OnApplicationShutdown {
   }
 
   async onModuleInit(): Promise<any> {
-    for await (const connection of this.connections) {
-      await this.rmqService.connect(connection);
+    for await (const options of this.options) {
+      await this.rmqService.connect(options);
     }
-
-    this.discoveryService.getControllers().map((controller) => {
-      this.metadataScanner.scanFromPrototype(
-        controller.instance,
-        Object.getPrototypeOf(controller.instance),
-        (key: string) =>
-          this.consumerService.consume(
-            controller.instance,
-            controller.instance[key],
-          ),
-      );
-    });
   }
 
   async onApplicationShutdown(): Promise<any> {
-    for (const connection of this.rmqService.getConnections()) {
-      await connection.shutdown();
+    RMQModule.isShutdown = true;
+
+    for (const connection of this.connectionService.getConnections()) {
+      await connection.close();
     }
   }
 }
