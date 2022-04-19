@@ -4,3 +4,6 @@
 /.prettierrc
 /node_modules
 /src
+/.idea
+/.eslintrc.js
+/tests
