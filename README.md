@@ -14,7 +14,6 @@ Special thanks for the reference: [nestjs-amqp](https://github.com/EnriqCG/nestj
 - Auto-reconnect
 - Multi-hosted rabbitmq support
 - Support for class-validator decorators.
-- Real production usage with more than 100 microservices.
 
 ## Start
 

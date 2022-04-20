@@ -14,7 +14,7 @@ import { ConnectionService } from './service/connection.service';
 @Module({
   imports: [DiscoveryModule],
   providers: [RMQService, ConsumerService, ConnectionService],
-  exports: [RMQService],
+  exports: [RMQService, ConnectionService],
 })
 export class RMQModule implements OnModuleInit, OnApplicationShutdown {
   public static isShutdown = false;
@@ -29,7 +29,7 @@ export class RMQModule implements OnModuleInit, OnApplicationShutdown {
     return {
       module: RMQModule,
       providers: [RMQService, { provide: RMQModule.name, useValue: options }],
-      exports: [RMQService],
+      exports: [RMQService, ConnectionService],
     };
   }
 

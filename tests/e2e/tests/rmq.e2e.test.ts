@@ -63,11 +63,11 @@ describe('e2e', () => {
       await new Promise<void>((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 1000);
+        }, 3000);
       });
 
       const dto: TestDto = TestController.test;
-      // await module.close();
+      await module.close();
 
       expect(dto.date).toBeInstanceOf(Date);
     });
